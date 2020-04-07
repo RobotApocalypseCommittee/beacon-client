@@ -9,7 +9,7 @@ namespace BeaconClient.Crypto
         public static AES256Key DeriveMasterKey(string password, string email)
         {
             byte[] emailBytes = Encoding.UTF8.GetBytes(email);
-            Rfc2898DeriveBytes deriver = new Rfc2898DeriveBytes(password, emailBytes);
+            Rfc2898DeriveBytes deriver = new Rfc2898DeriveBytes(password, emailBytes, 16384);
 
             byte[] key = deriver.GetBytes(32);
 
