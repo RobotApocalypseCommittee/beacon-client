@@ -9,7 +9,10 @@
         <Label Text="Welcome to Joemama!" 
            HorizontalOptions="Center"
            VerticalOptions="CenterAndExpand" />
-        <Button Text="Atto has smol brain" />
+        <Button Text="Atto is excellent"
+                Clicked="OnButtonClicked"
+                VerticalOptions="CenterAndExpand"
+                HorizontalOptions="Center" />
 
     </StackLayout>
 

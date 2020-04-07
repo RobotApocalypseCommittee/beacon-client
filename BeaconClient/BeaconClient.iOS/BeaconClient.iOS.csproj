@@ -26,6 +26,7 @@
     <MtouchArch>x86_64</MtouchArch>
     <MtouchLink>None</MtouchLink>
     <MtouchDebug>true</MtouchDebug>
+    <CodesignKey>iPhone Developer</CodesignKey>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|iPhoneSimulator' ">
     <DebugType>none</DebugType>
@@ -117,7 +118,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BeaconClient\BeaconClient.csproj">
-      <Project>{CFECEEBE-A348-449B-BD70-8093E71B546B}</Project>
+      <Project>{D18EB1B9-8540-4017-BB73-671ECC1D06B6}</Project>
       <Name>BeaconClient</Name>
     </ProjectReference>
   </ItemGroup>

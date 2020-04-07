@@ -1,4 +1,5 @@
 ﻿using System;
+
 using AppKit;
 using Foundation;
 
@@ -19,7 +20,10 @@ namespace BeaconClient.Mac
 
         public override NSObject RepresentedObject
         {
-            get { return base.RepresentedObject; }
+            get
+            {
+                return base.RepresentedObject;
+            }
             set
             {
                 base.RepresentedObject = value;

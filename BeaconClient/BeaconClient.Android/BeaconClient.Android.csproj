@@ -14,7 +14,6 @@
         <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
         <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
         <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
-        <AndroidUseLatestPlatformSdk>false</AndroidUseLatestPlatformSdk>
         <TargetFrameworkVersion>v9.0</TargetFrameworkVersion>
         <AndroidHttpClientHandlerType>Xamarin.Android.Net.AndroidClientHandler</AndroidHttpClientHandlerType>
     </PropertyGroup>
@@ -36,7 +35,6 @@
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
         <AndroidManagedSymbols>true</AndroidManagedSymbols>
-        <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
     </PropertyGroup>
     <ItemGroup>
         <Reference Include="Mono.Android" />
@@ -66,7 +64,7 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\BeaconClient\BeaconClient.csproj">
-            <Project>{CFECEEBE-A348-449B-BD70-8093E71B546B}</Project>
+            <Project>{D18EB1B9-8540-4017-BB73-671ECC1D06B6}</Project>
             <Name>BeaconClient</Name>
         </ProjectReference>
     </ItemGroup>

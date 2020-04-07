@@ -1,5 +1,7 @@
 ﻿using AppKit;
 using Foundation;
+
+using Xamarin.Forms;
 using Xamarin.Forms.Platform.MacOS;
 
 namespace BeaconClient.Mac
@@ -8,29 +10,25 @@ namespace BeaconClient.Mac
     public class AppDelegate : FormsApplicationDelegate
     {
         NSWindow window;
-        
+
         public AppDelegate()
         {
-            /*caret*/
             var style = NSWindowStyle.Closable | NSWindowStyle.Resizable | NSWindowStyle.Titled;
-            var rect = new CoreGraphics.CGRect(200, 1000, 1024, 768);
-            window = new NSWindow(rect, style, NSBackingStore.Buffered, false)
-            {
-                Title = "Joemama2",
-                TitleVisibility = NSWindowTitleVisibility.Hidden
-            };
-        }
 
-        public override void DidFinishLaunching(NSNotification notification)
-        {
-            // Insert code here to initialize your application
-            Xamarin.Forms.Forms.Init();
-            LoadApplication(new App());
-            base.DidFinishLaunching(notification);
+            var rect = new CoreGraphics.CGRect(200, 1000, 1024, 768);
+            window = new NSWindow(rect, style, NSBackingStore.Buffered, false);
+            window.Title = "Xamarin.Forms on Mac!"; // choose your own Title here
+            window.TitleVisibility = NSWindowTitleVisibility.Hidden;
         }
 
         public override NSWindow MainWindow => window;
 
+        public override void DidFinishLaunching(NSNotification notification)
+        {
+            Forms.Init();
+            LoadApplication(new App());
+            base.DidFinishLaunching(notification);
+        }
 
         public override void WillTerminate(NSNotification notification)
         {
