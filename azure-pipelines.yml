@@ -45,7 +45,7 @@ steps:
 - task: InstallAppleCertificate@2
   inputs:
     certSecureFile: 'RACDev.p12'
-    certPwd: '$(P12password)'
+    certPwd: 'iBo3uMiRcLYv3x88X6qMiVd'
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Install iOS Signing Certificate"
 - task: InstallAppleProvisioningProfile@1
