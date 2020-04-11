@@ -13,6 +13,10 @@
                 Clicked="OnButtonClicked"
                 VerticalOptions="CenterAndExpand"
                 HorizontalOptions="Center" />
+        <Button Text="Binary Test"
+                Clicked="OnButton2Clicked"
+                VerticalOptions="CenterAndExpand"
+                HorizontalOptions="Center" />
 
     </StackLayout>
 

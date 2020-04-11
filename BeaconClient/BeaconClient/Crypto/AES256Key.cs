@@ -6,42 +6,62 @@ namespace BeaconClient.Crypto
 {
     public class AES256Key
     {
-        private AesCryptoServiceProvider provider;
+        private AesCryptoServiceProvider _provider;
 
         private void InitialiseProvider()
         {
-            provider = new AesCryptoServiceProvider();
-            provider.KeySize = 256;
+            _provider = new AesCryptoServiceProvider {KeySize = 256};
         }
 
         public AES256Key()
         {
             InitialiseProvider();
-            provider.GenerateKey();
+            _provider.GenerateKey();
         }
 
         public AES256Key(byte[] key)
         {
             InitialiseProvider();
-            provider.Key = key;
+            _provider.Key = key;
         }
 
         ~AES256Key()
         {
-            provider.Dispose();
+            _provider.Dispose();
         }
 
-        public byte[] IV => provider.IV;
+        public byte[] IV => _provider.IV;
 
-        public byte[] EncryptStringToBytes(string plainText)
+        public byte[] Encrypt(byte[] plainText, int offset = 0)
         {
             // TODO do checks on args
+            
+            byte[] encrypted;
+            
+            _provider.GenerateIV();
+            ICryptoTransform encryptor = _provider.CreateEncryptor();
 
-            provider.GenerateIV();
+            using (MemoryStream msEncrypt = new MemoryStream())
+            {
+                using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                {
+                    csEncrypt.Write(plainText, offset, plainText.Length-offset);
+                }
 
+                encrypted = msEncrypt.ToArray();
+            }
+
+            return encrypted;
+        }
+
+        public byte[] Encrypt(string plainText)
+        {
+            // TODO do checks on args
+            
             byte[] encrypted;
 
-            ICryptoTransform encryptor = provider.CreateEncryptor();
+            _provider.GenerateIV();
+            ICryptoTransform encryptor = _provider.CreateEncryptor();
 
             using (MemoryStream msEncrypt = new MemoryStream())
             {
@@ -51,23 +71,45 @@ namespace BeaconClient.Crypto
                     {
                         swEncrypt.Write(plainText);
                     }
-
-                encrypted = msEncrypt.ToArray();
                 }
+                
+                encrypted = msEncrypt.ToArray();
             }
 
             return encrypted;
         }
 
-        public string DecryptBytesToString(byte[] cipherText, byte[] iv)
+        public byte[] DecryptBytes(byte[] cipherText, byte[] iv)
         {
             // TODO do checks on args
 
-            provider.IV = iv;
+            byte[] plainText;
 
+            _provider.IV = iv;
+            ICryptoTransform decryptor = _provider.CreateDecryptor();
+
+            using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+            {
+                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                {
+                    using (BinaryReader brDecrypt = new BinaryReader(csDecrypt))
+                    {
+                        plainText = brDecrypt.ReadBytes(cipherText.Length);
+                    }
+                }
+            }
+
+            return plainText;
+        }
+
+        public string DecryptString(byte[] cipherText, byte[] iv)
+        {
+            // TODO do checks on args
+            
             string plainText;
 
-            ICryptoTransform decryptor = provider.CreateDecryptor();
+            _provider.IV = iv;
+            ICryptoTransform decryptor = _provider.CreateDecryptor();
 
             using (MemoryStream msDecrypt = new MemoryStream(cipherText))
             {
