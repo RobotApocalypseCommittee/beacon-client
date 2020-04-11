@@ -12,7 +12,9 @@ pool:
   vmImage: $(imageName)
 
 variables:
-  buildConfiguration: 'Debug'
+  - name: "buildConfiguration"
+    value: "Debug"
+  - group: Main
 
 steps:
 - task: NuGetToolInstaller@1
@@ -45,7 +47,7 @@ steps:
 - task: InstallAppleCertificate@2
   inputs:
     certSecureFile: 'RACDev.p12'
-    certPwd: 'iBo3uMiRcLYv3x88X6qMiVd'
+    certPwd: '$(P12password)'
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Install iOS Signing Certificate"
 - task: InstallAppleProvisioningProfile@1
@@ -71,7 +73,7 @@ steps:
     msbuildArchitecture: 'x64'
     platform: 'AnyCPU'
     configuration: '$(buildConfiguration)'
-    msbuildArguments: '/p:OutputPath="$(Build.ArtifactStagingDirectory)"'
+    msbuildArguments: '/p:OutputPath="$(Build.ArtifactStagingDirectory)/"'
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Mac Build"
 
