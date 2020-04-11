@@ -26,14 +26,14 @@ steps:
 # Android
 - task: XamarinAndroid@1
   inputs:
-    projectFile: '**/*droid*.csproj'
+    projectFile: 'BeaconClient/BeaconClient.Android/BeaconClient.Android.csproj'
     outputDirectory: '$(Build.ArtifactStagingDirectory)'
     configuration: '$(buildConfiguration)'
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Android Build"
 - task: AndroidSigning@3
   inputs:
-    apkFiles: '**/*.apk'
+    apkFiles: '$(Build.ArtifactStagingDirectory)/*.apk'
     apksignerKeystoreFile: 'RAC.jks'
     apksignerKeystorePassword: '$(AndroidKeystorePassword)'
     apksignerKeystoreAlias: '$(AndroidKeyAlias)'
@@ -44,18 +44,18 @@ steps:
 # iOS
 - task: InstallAppleCertificate@2
   inputs:
-    certSecureFile: 'RAC Dev.p12'
+    certSecureFile: 'RACDev.p12'
     certPwd: '$(P12password)'
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Install iOS Signing Certificate"
 - task: InstallAppleProvisioningProfile@1
   inputs:
-    provProfileSecureFile: 'BeaconClient 11Apr2019.mobileprovision' # I seriously blanked on the year
+    provProfileSecureFile: 'BeaconClient11Apr2019.mobileprovision' # I seriously blanked on the year
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Install iOS Provisioning Profile"
 - task: XamariniOS@2
   inputs:
-    solutionFile: '**/*iOS.csproj'
+    solutionFile: 'BeaconClient/BeaconClient.iOS/BeaconClient.iOS.csproj'
     configuration: '$(buildConfiguration)'
     packageApp: true
     buildForSimulator: false
