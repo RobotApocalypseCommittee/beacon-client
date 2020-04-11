@@ -1,0 +1,93 @@
+trigger:
+- master
+
+strategy:
+  matrix:
+    mac:
+      imageName: 'macos-latest'
+    windows:
+      imageName: 'windows-latest'
+
+pool:
+  vmImage: $(imageName)
+
+variables:
+  buildConfiguration: 'Debug'
+
+steps:
+- task: NuGetToolInstaller@1
+  displayName: "Install NuGet"
+
+- task: NuGetCommand@2
+  inputs:
+    restoreSolution: '**/*.sln'
+  displayName: "NuGet: Restore Solution"
+
+# Android
+- task: XamarinAndroid@1
+  inputs:
+    projectFile: '**/*droid*.csproj'
+    outputDirectory: '$(Build.ArtifactStagingDirectory)'
+    configuration: '$(buildConfiguration)'
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Android Build"
+- task: AndroidSigning@3
+  inputs:
+    apkFiles: '**/*.apk'
+    apksignerKeystoreFile: 'RAC.jks'
+    apksignerKeystorePassword: '$(AndroidKeystorePassword)'
+    apksignerKeystoreAlias: '$(AndroidKeyAlias)'
+    apksignerKeyPassword: '$(AndroidKeyPassword)'
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Sign Android APK"
+
+# iOS
+- task: InstallAppleCertificate@2
+  inputs:
+    certSecureFile: 'RAC Dev.p12'
+    certPwd: '$(P12password)'
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Install iOS Signing Certificate"
+- task: InstallAppleProvisioningProfile@1
+  inputs:
+    provProfileSecureFile: 'BeaconClient 11Apr2019.mobileprovision' # I seriously blanked on the year
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Install iOS Provisioning Profile"
+- task: XamariniOS@2
+  inputs:
+    solutionFile: '**/*iOS.csproj'
+    configuration: '$(buildConfiguration)'
+    packageApp: true
+    buildForSimulator: false
+    signingIdentity: '$(APPLE_CERTIFICATE_SIGNING_IDENTITY)'
+    signingProvisioningProfileID: '$(APPLE_PROV_PROFILE_UUID)'
+    args: /p:IpaPackageDir="$(Build.ArtifactStagingDirectory)"
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "iOS Build"
+
+- task: MSBuild@1
+  inputs:
+    solution: '**/*Mac.csproj'
+    msbuildArchitecture: 'x64'
+    platform: 'AnyCPU'
+    configuration: '$(buildConfiguration)'
+    msbuildArguments: '/p:OutputPath="$(Build.ArtifactStagingDirectory)"'
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Mac Build"
+
+- task: MSBuild@1
+  inputs:
+    solution: '**/*Windows.csproj'
+    msbuildArchitecture: 'x64'
+    platform: 'AnyCPU'
+    configuration: '$(buildConfiguration)'
+    msbuildArguments: '/p:OutputPath="$(Build.ArtifactStagingDirectory)"'
+  condition: eq( variables['Agent.OS'], 'Windows_NT' )
+  displayName: "Windows Build"
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: '$(Agent.OS)'
+    publishLocation: 'Container'
+  displayName: "Publish Build Artifacts"
