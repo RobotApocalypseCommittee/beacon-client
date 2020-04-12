@@ -110,7 +110,7 @@ steps:
     ln -s /Applications "$(Build.ArtifactStagingDirectory)/macdist"
     hdiutil create -volname "Beacon Client for Mac" -srcfolder "$(Build.ArtifactStagingDirectory)/macdist" -ov -format UDZO "$(Build.ArtifactStagingDirectory)/BeaconClientMac.dmg"
   condition: eq( variables['Agent.OS'], 'Darwin' )
-  displayName: "Package App on Mac"
+  displayName: "Package App Mac"
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/BeaconClientMac.dmg'
@@ -121,8 +121,15 @@ steps:
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/BeaconClient.Windows.exe'
     ArtifactName: 'Windows'
     publishLocation: 'Container'
   condition: eq( variables['Agent.OS'], 'Windows_NT' )
   displayName: "Publish Windows"
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/*.pdb'
+    ArtifactName: 'Windows Debug Files'
+    publishLocation: 'Container'
+  condition: eq( variables['buildConfiguration'], 'Debug' )
+  displayName: "Publish Windows Debug Files"
