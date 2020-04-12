@@ -89,7 +89,40 @@ steps:
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: '$(Agent.OS)'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/com.bekos.BeaconClient.apk'
+    ArtifactName: 'Android'
     publishLocation: 'Container'
-  displayName: "Publish Build Artifacts"
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Publish Android"
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/iOSBeaconClient.ipa'
+    ArtifactName: 'iOS'
+    publishLocation: 'Container'
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Publish iOS"
+
+- bash: |
+    cd "$(Build.ArtifactStagingDirectory)"
+    mkdir macdist
+    mv "$(Build.ArtifactStagingDirectory)/BeaconClient.Mac.app" "$(Build.ArtifactStagingDirectory)/macdist"
+    ln -s /Applications "$(Build.ArtifactStagingDirectory)/macdist"
+    hdiutil create -volname "Beacon Client for Mac" -srcfolder "$(Build.ArtifactStagingDirectory)/macdist" -ov -format UDZO "$(Build.ArtifactStagingDirectory)/BeaconClientMac.dmg"
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Package App on Mac"
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/BeaconClientMac.dmg'
+    ArtifactName: 'Mac'
+    publishLocation: 'Container'
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: "Publish Mac"
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'Windows'
+    publishLocation: 'Container'
+  condition: eq( variables['Agent.OS'], 'Windows_NT' )
+  displayName: "Publish Windows"
