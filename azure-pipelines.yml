@@ -119,17 +119,16 @@ steps:
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Publish Mac"
 
+- powershell: |
+    mkdir "$(Build.ArtifactStagingDirectory)/windist"
+    Move-Item "$(Build.ArtifactStagingDirectory)/BeaconClient.Windows.exe" "$(Build.ArtifactStagingDirectory)/windist"
+    if ("$(buildConfiguration)" -eq "Debug") {Move-Item "$(Build.ArtifactStagingDirectory)/BeaconClient.Windows.pdb" "$(Build.ArtifactStagingDirectory)/windist";}
+  condition: eq( variables['Agent.OS'], 'Windows_NT' )
+  displayName: "Package App Windows"
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/BeaconClient.Windows.exe'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/windist'
     ArtifactName: 'Windows'
     publishLocation: 'Container'
   condition: eq( variables['Agent.OS'], 'Windows_NT' )
   displayName: "Publish Windows"
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/BeaconClient.Windows.pdb'
-    ArtifactName: 'Windows Debug Files'
-    publishLocation: 'Container'
-  condition: and(eq( variables['buildConfiguration'], 'Debug' ), eq( variables['Agent.OS'], 'Windows_NT' ))
-  displayName: "Publish Windows Debug Files"
