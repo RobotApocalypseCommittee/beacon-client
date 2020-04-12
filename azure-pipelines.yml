@@ -128,8 +128,8 @@ steps:
   displayName: "Publish Windows"
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/*.pdb'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/BeaconClient.Windows.pdb'
     ArtifactName: 'Windows Debug Files'
     publishLocation: 'Container'
-  condition: eq( variables['buildConfiguration'], 'Debug' )
+  condition: and(eq( variables['buildConfiguration'], 'Debug' ), eq( variables['Agent.OS'], 'Windows_NT' ))
   displayName: "Publish Windows Debug Files"
