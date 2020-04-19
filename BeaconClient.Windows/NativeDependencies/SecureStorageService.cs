@@ -10,8 +10,12 @@ namespace BeaconClient.Windows.NativeDependencies
 {
     public class SecureStorageService : ISecureStorageService
     {
+        private const string KeyPrefix = "BeaconClient-SecureStorage-";
+        
         public async Task SetAsync(string key, string value)
         {
+            key = KeyPrefix + key;
+            
             await Task.Run(async () =>
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(value);
@@ -24,6 +28,8 @@ namespace BeaconClient.Windows.NativeDependencies
         
         public async Task<string> GetAsync(string key)
         {
+            key = KeyPrefix + key;
+            
             return await Task.Run(() =>
             {
                 if (!Application.Current.Properties.TryGetValue(key, out var encString))
@@ -39,6 +45,8 @@ namespace BeaconClient.Windows.NativeDependencies
 
         public bool Remove(string key)
         {
+            key = KeyPrefix + key;
+            
             // If it doesn't exist, we should return true
             if (!Application.Current.Properties.ContainsKey(key))
                 return true;

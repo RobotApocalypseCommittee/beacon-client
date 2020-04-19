@@ -13,10 +13,13 @@ namespace BeaconClient.Mac.NativeDependencies
     public class SecureStorageService : ISecureStorageService
     {
         private const string Service = "com.bekos.BeaconClient.Mac.SecureStorage";
+        private const string KeyPrefix = "BeaconClient-SecureStorage-";
         private const SecAccessible Accessible = SecAccessible.AfterFirstUnlockThisDeviceOnly;
         
         public Task SetAsync(string key, string value)
         {
+            key = KeyPrefix + key;
+            
             SecRecord record = new SecRecord(SecKind.GenericPassword)
             {
                 Account = key,
@@ -59,6 +62,8 @@ namespace BeaconClient.Mac.NativeDependencies
 
         public Task<string> GetAsync(string key)
         {
+            key = KeyPrefix + key;
+            
             SecRecord record = new SecRecord(SecKind.GenericPassword)
             {
                 Account = key,
@@ -79,6 +84,8 @@ namespace BeaconClient.Mac.NativeDependencies
 
         public bool Remove(string key)
         {
+            key = KeyPrefix + key;
+            
             SecRecord record = new SecRecord(SecKind.GenericPassword)
             {
                 Account = key,
