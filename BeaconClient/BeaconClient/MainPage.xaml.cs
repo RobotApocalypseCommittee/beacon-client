@@ -12,6 +12,7 @@ namespace BeaconClient
     public partial class MainPage : ContentPage
     {
         private readonly ISecureStorageService _secureStorageService = DependencyService.Get<ISecureStorageService>();
+        private readonly IPreferencesService _preferencesService = DependencyService.Get<IPreferencesService>();
         
         public MainPage()
         {
@@ -58,7 +59,7 @@ namespace BeaconClient
 
         private async void OnButton2Clicked(object sender, EventArgs e)
         {
-            var preferences = Application.Current.Properties;
+            var preferences = _preferencesService;
 
             string serverUrl = ServerEntry.Text;
             
@@ -78,14 +79,14 @@ namespace BeaconClient
             string deviceUuid;
             if (preferences.ContainsKey("deviceUuid"))
             {
-                deviceUuid = (string) preferences["deviceUuid"];
+                deviceUuid = preferences.Get("deviceUuid", null);
                 connection = new ServerConnection(serverUrl, deviceKeyPair, deviceUuid);
             }
             else
             {
                 connection = new ServerConnection(serverUrl, deviceKeyPair);
                 deviceUuid = await connection.RegisterDeviceAsync();
-                preferences["deviceUuid"] = deviceUuid;
+                preferences.Set("deviceUuid", deviceUuid);
                 await Application.Current.SavePropertiesAsync();
             }
 
@@ -96,7 +97,7 @@ namespace BeaconClient
             Curve25519KeyPair signedPreKeyPair;
             if (preferences.ContainsKey("userUuid"))
             {
-                userUuid = (string) preferences["userUuid"];
+                userUuid = preferences.Get("userUuid", null);
 
                 string userPrivateKeyBase64 = await _secureStorageService.GetAsync("userPrivateKey");
                 string userSignedPreKeyBase64 = await _secureStorageService.GetAsync("userSignedPreKey");
@@ -114,7 +115,7 @@ namespace BeaconClient
                 signedPreKeyPair = new Curve25519KeyPair();
 
                 userUuid = await connection.RegisterUserAsync(EmailEntry.Text, userKeyPair, signedPreKeyPair, "Jevans", "Coolest alive");
-                preferences["userUuid"] = userUuid;
+                preferences.Set("userUuid", userUuid);
                 await _secureStorageService.SetAsync("userPrivateKey", Convert.ToBase64String(userKeyPair.EdPrivateKey));
                 await _secureStorageService.SetAsync("userSignedPreKey", Convert.ToBase64String(signedPreKeyPair.XPrivateKey));
             }

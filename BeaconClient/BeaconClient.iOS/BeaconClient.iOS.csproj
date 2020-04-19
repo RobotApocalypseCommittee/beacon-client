@@ -99,6 +99,7 @@
     <Compile Include="AppDelegate.cs" />
     <None Include="Entitlements.plist" />
     <None Include="Info.plist" />
+    <Compile Include="NativeDependencies\PreferencesService.cs" />
     <Compile Include="NativeDependencies\SecureStorageService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

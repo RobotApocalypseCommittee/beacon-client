@@ -11,18 +11,19 @@ namespace BeaconClient.Windows.NativeDependencies
     public class SecureStorageService : ISecureStorageService
     {
         private const string KeyPrefix = "BeaconClient-SecureStorage-";
+        // It's a singleton in reality
+        private static readonly PreferencesService PreferencesService = new PreferencesService();
         
         public async Task SetAsync(string key, string value)
         {
             key = KeyPrefix + key;
             
-            await Task.Run(async () =>
+            await Task.Run(() =>
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(value);
 
                 byte[] encBytes = ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser);
-                Application.Current.Properties[key] = Convert.ToBase64String(encBytes);
-                await Application.Current.SavePropertiesAsync().ConfigureAwait(false);
+                PreferencesService.Set(key, Convert.ToBase64String(encBytes));
             });
         }
         
@@ -32,14 +33,13 @@ namespace BeaconClient.Windows.NativeDependencies
             
             return await Task.Run(() =>
             {
-                if (!Application.Current.Properties.TryGetValue(key, out var encString))
-                    return null;
+                string encString = PreferencesService.Get(key, null);
+                if (encString is null) return null;
                 
                 byte[] encBytes = Convert.FromBase64String((string) encString);
                 byte[] bytes = ProtectedData.Unprotect(encBytes, null, DataProtectionScope.CurrentUser);
 
                 return Encoding.UTF8.GetString(bytes);
-
             });
         }
 
@@ -48,12 +48,11 @@ namespace BeaconClient.Windows.NativeDependencies
             key = KeyPrefix + key;
             
             // If it doesn't exist, we should return true
-            if (!Application.Current.Properties.ContainsKey(key))
-                return true;
+            if (PreferencesService.ContainsKey(key))
+                PreferencesService.Remove(key);
             
-            bool success = Application.Current.Properties.Remove(key);
-            Application.Current.SavePropertiesAsync();
-            return success;
+            // It will NEVER exist after this, so we always return true
+            return true;
         }
     }
 }

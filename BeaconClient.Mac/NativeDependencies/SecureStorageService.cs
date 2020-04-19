@@ -46,7 +46,7 @@ namespace BeaconClient.Mac.NativeDependencies
                         }
                         else
                         {
-                            Debug.WriteLine("Unable to remove key.");
+                            throw new Exception($"Error removing record: {result}");
                         }
                     }
                         break;

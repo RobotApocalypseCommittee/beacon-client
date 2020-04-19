@@ -97,6 +97,7 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AppDelegate.cs" />
+    <Compile Include="NativeDependencies\PreferencesService.cs" />
     <Compile Include="NativeDependencies\SecureStorageService.cs" />
     <Compile Include="ViewController.cs" />
     <Compile Include="ViewController.designer.cs">
