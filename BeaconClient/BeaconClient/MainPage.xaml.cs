@@ -21,34 +21,34 @@ namespace BeaconClient
         private async void OnButtonClicked(object sender, EventArgs e)
         {
             AES256Key key = CryptoUtils.DeriveMasterKey("secure boi", "jane.evans@westminster.org.uk");
-            byte[] cipherText = key.Encrypt("Hello World!");
-            await DisplayAlert("Encrypted:", string.Join(", ", cipherText), "Ok");
+            // Just an example
+            byte[] mKey = new AES256Key().Key;
 
-            byte[] iv = key.IV;
+            byte[] plainText = Encoding.UTF8.GetBytes("SECRET");
+            byte[] associatedData = Encoding.UTF8.GetBytes("AD, Not secret");
+            byte[] cipherTextWithHmac = CryptoUtils.EncryptWithMessageKey(mKey, plainText, associatedData);
+            string plainTextDecrypted = Encoding.UTF8.GetString(CryptoUtils.DecryptWithMessageKey(mKey, cipherTextWithHmac, associatedData));
+            
+            byte[] associatedDataBad = Encoding.UTF8.GetBytes("AD, wrong");
+            byte[] mKeyBad = new AES256Key().Key;
 
-            key = CryptoUtils.DeriveMasterKey("secure boi", "jane.evans@westminster.org.uk");
-            await DisplayAlert("Decrypted:", key.DecryptString(cipherText, iv), "Ok");
+            byte[] plainTextDecryptedAdBad = 
+                CryptoUtils.DecryptWithMessageKey(mKey, cipherTextWithHmac, associatedDataBad);
+
+            await DisplayAlert("Message Keys",
+                $"Decrypted: {plainTextDecrypted}\nAD Bad null? {plainTextDecryptedAdBad is null}", "Ok");
 
             try
-            { 
-                AES256Key wrongKey = CryptoUtils.DeriveMasterKey("wrong boi", "jane.evans@westminster.org.uk");
-                await DisplayAlert("Wrong Password Decryption:", wrongKey.DecryptString(cipherText, iv), "Ok");
+            {
+                byte[] plainTextDecryptedKeyBad =
+                    CryptoUtils.DecryptWithMessageKey(mKeyBad, cipherTextWithHmac, associatedData);
+                await DisplayAlert("Bad Key gives null? (True is good)", (plainTextDecryptedKeyBad is null).ToString(), "Ok");
             }
             catch (CryptographicException ex)
             {
-                await DisplayAlert("Wrongful Decryption Failed (This is good):", ex.ToString(), "Ok");
+                await DisplayAlert("Bad Key Failed :)", ex.ToString(), "Ok");
             }
 
-            byte[] associatedData = Encoding.UTF8.GetBytes("AD, not secret");
-            byte[] hmacTest = key.EncryptWithHmac(Encoding.UTF8.GetBytes("Secret text"), associatedData);
-            string decryptedHmac = Encoding.UTF8.GetString(key.DecryptWithHmac(hmacTest, key.IV, associatedData));
-            
-            byte[] associatedDataBad = Encoding.UTF8.GetBytes("AD has changed, not secret");
-            byte[] decryptedHmacBad = key.DecryptWithHmac(hmacTest, key.IV, associatedDataBad);
-
-            await DisplayAlert("HMAC Test",
-                $"Decrypted: {decryptedHmac}\nBad Decrypted is Null? {decryptedHmacBad is null}", "Ok");
-            
             var watch = System.Diagnostics.Stopwatch.StartNew();
             _secureStorageService.Remove("hi");
             await _secureStorageService.SetAsync("hi", "epic gamer");

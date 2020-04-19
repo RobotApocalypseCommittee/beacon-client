@@ -33,14 +33,23 @@ namespace BeaconClient.Crypto
         }
 
         public byte[] IV => _provider.IV;
+        public byte[] Key => _provider.Key;
 
-        public byte[] Encrypt(byte[] plainText, int offset = 0)
+        public byte[] Encrypt(byte[] plainText, byte[] iv, int offset = 0)
         {
             // TODO do checks on args
             
             byte[] encrypted;
-            
-            _provider.GenerateIV();
+
+            if (iv is null)
+            {
+                _provider.GenerateIV();
+            }
+            else
+            {
+                _provider.IV = iv;
+            }
+
             ICryptoTransform encryptor = _provider.CreateEncryptor();
 
             using (MemoryStream msEncrypt = new MemoryStream())
@@ -56,32 +65,14 @@ namespace BeaconClient.Crypto
             return encrypted;
         }
 
-        public byte[] Encrypt(string plainText)
+        // Returns (cipher text, iv) tuple
+        public (byte[], byte[]) Encrypt(byte[] plainText, int offset = 0)
         {
-            // TODO do checks on args
-            
-            byte[] encrypted;
-
             _provider.GenerateIV();
-            ICryptoTransform encryptor = _provider.CreateEncryptor();
-
-            using (MemoryStream msEncrypt = new MemoryStream())
-            {
-                using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-                {
-                    using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
-                    {
-                        swEncrypt.Write(plainText);
-                    }
-                }
-                
-                encrypted = msEncrypt.ToArray();
-            }
-
-            return encrypted;
+            return (Encrypt(plainText, _provider.IV, offset), _provider.IV);
         }
 
-        public byte[] DecryptBytes(byte[] cipherText, byte[] iv)
+        public byte[] Decrypt(byte[] cipherText, byte[] iv)
         {
             // TODO do checks on args
 
@@ -104,55 +95,10 @@ namespace BeaconClient.Crypto
             return plainText;
         }
 
-        public string DecryptString(byte[] cipherText, byte[] iv)
+        public byte[] CalculateHmac256Hash(byte[] inputData)
         {
-            // TODO do checks on args
-            
-            string plainText;
-
-            _provider.IV = iv;
-            ICryptoTransform decryptor = _provider.CreateDecryptor();
-
-            using (MemoryStream msDecrypt = new MemoryStream(cipherText))
-            {
-                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                {
-                    using (StreamReader srDecrypt = new StreamReader(csDecrypt))
-                    {
-                        plainText = srDecrypt.ReadToEnd();
-                    }
-                }
-            }
-
-            return plainText;
-        }
-
-        public byte[] EncryptWithHmac(byte[] plainText, byte[] associatedData = null)
-        {
-            byte[] encrypted = Encrypt(plainText);
-            byte[] toHash = encrypted.Concat(IV).Concat(associatedData ?? new byte[1]).ToArray();
-            
             HMACSHA256 hmac = new HMACSHA256(_provider.Key);
-            
-            byte[] hash = hmac.ComputeHash(toHash);
-
-            // Prepends hash to the encrypted message
-            return hash.Concat(encrypted).ToArray();
-        }
-
-        public byte[] DecryptWithHmac(byte[] cipherText, byte[] iv, byte[] associatedData = null)
-        {
-            byte[] hash = cipherText.Take(256 / 8).ToArray();
-            byte[] encrypted = new byte[cipherText.Length-256/8];
-            Array.Copy(cipherText, 256/8, encrypted, 0, encrypted.Length);
-            
-            // The associated data will default to an empty 0x00 byte
-            byte[] toHash = encrypted.Concat(iv).Concat(associatedData ?? new byte[1]).ToArray();
-            HMACSHA256 hmac = new HMACSHA256(_provider.Key);
-            byte[] hashCalculated = hmac.ComputeHash(toHash);
-            
-            // if the hashes don't match, return null
-            return !hash.SequenceEqual(hashCalculated) ? null : DecryptBytes(encrypted, iv);
+            return hmac.ComputeHash(inputData);
         }
     }
 }

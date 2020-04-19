@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -26,7 +27,13 @@ namespace BeaconClient.Crypto
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         };
 
-        private const string ProtocolInfo = "BeaconClientv1.0.0";
+        private static readonly byte[] X3DhProtocolInfo = Encoding.UTF8.GetBytes("BeaconClientX3DH-1.0.0");
+        private static readonly byte[] MessageProtocolInfo = Encoding.UTF8.GetBytes("BeaconClientMessage-1.0.0");
+        private static readonly byte[] RkRatchetProtocolInfo = Encoding.UTF8.GetBytes("BeaconClientRkRatchet-1.0.0");
+        private static readonly byte[] CkRatchetProtocolInfo = Encoding.UTF8.GetBytes("BeaconClientCkRatchet-1.0.0");
+        private static readonly byte[] CkRatchet2ProtocolInfo = Encoding.UTF8.GetBytes("BeaconClientCkRatchet2-1.0.0");
+        private static readonly byte[] MkRatchetProtocolInfo = Encoding.UTF8.GetBytes("BeaconClientMkRatchet-1.0.0");
+        private static readonly byte[] AdRatchetProtocolInfo = Encoding.UTF8.GetBytes("BeaconClientAdRatchet-1.0.0");
         
         public static AES256Key DeriveMasterKey(string password, string email)
         {
@@ -68,7 +75,7 @@ namespace BeaconClient.Crypto
                 dhConcat = dhConcat.Concat(dh4);
             }
 
-            byte[] sharedSecret = X3DhKdf(dhConcat.ToArray(), Encoding.UTF8.GetBytes(ProtocolInfo));
+            byte[] sharedSecret = X3DhKdf(dhConcat.ToArray(), X3DhProtocolInfo);
             return new AES256Key(sharedSecret);
         }
 
@@ -88,7 +95,7 @@ namespace BeaconClient.Crypto
                 dhConcat = dhConcat.Concat(dh4);
             }
 
-            byte[] sharedSecret = X3DhKdf(dhConcat.ToArray(), Encoding.UTF8.GetBytes(ProtocolInfo));
+            byte[] sharedSecret = X3DhKdf(dhConcat.ToArray(), X3DhProtocolInfo);
             return new AES256Key(sharedSecret);
         }
 
@@ -96,6 +103,94 @@ namespace BeaconClient.Crypto
             Curve25519KeyPair identityKeyB)
         {
             return identityKeyA.XPublicKey.Concat(identityKeyB.XPublicKey).ToArray();
+        }
+        
+        private static byte[] EncryptWithHmac(AES256Key encryptionKey, byte[] iv, AES256Key authenticationKey, byte[] plainText, byte[] associatedData = null)
+        {
+            byte[] cipherText = encryptionKey.Encrypt(plainText, iv);
+            byte[] toHash = (associatedData ?? new byte[1]).Concat(cipherText).ToArray();
+            byte[] hash = authenticationKey.CalculateHmac256Hash(toHash);
+
+            // Appends hash to the encrypted message
+            return cipherText.Concat(hash).ToArray();
+        }
+
+        private static byte[] DecryptWithHmac(AES256Key encryptionKey, byte[] iv, AES256Key authenticationKey, byte[] cipherTextWithHmac, byte[] associatedData = null)
+        {
+            byte[] cipherText = cipherTextWithHmac.Take(cipherTextWithHmac.Length-256/8).ToArray();
+            byte[] hash = new byte[256/8];
+            Array.Copy(cipherTextWithHmac, cipherTextWithHmac.Length-256/8, hash, 0, hash.Length);
+            
+            // The associated data will default to an empty 0x00 byte
+            byte[] toHash = (associatedData ?? new byte[1]).Concat(cipherText).ToArray();
+            byte[] hashCalculated = authenticationKey.CalculateHmac256Hash(toHash);
+            
+            // if the hashes don't match, return null
+            return !hash.SequenceEqual(hashCalculated) ? null : encryptionKey.Decrypt(cipherText, iv);
+        }
+
+        public static byte[] EncryptWithMessageKey(byte[] messageKey, byte[] plainText, byte[] associatedData = null)
+        {
+            HkdfParameters parameters = new HkdfParameters(messageKey, ThirtyTwoZeros, MessageProtocolInfo);
+            HkdfBytesGenerator generator = new HkdfBytesGenerator(new Sha256Digest());
+            generator.Init(parameters);
+            
+            byte[] encryptionKey = new byte[32];
+            byte[] authenticationKey = new byte[32];
+            byte[] iv = new byte[16];
+
+            generator.GenerateBytes(encryptionKey, 0, encryptionKey.Length);
+            generator.GenerateBytes(authenticationKey, 0, authenticationKey.Length);
+            generator.GenerateBytes(iv, 0, iv.Length);
+
+            return EncryptWithHmac(new AES256Key(encryptionKey), iv, new AES256Key(authenticationKey), plainText,
+                associatedData);
+        }
+
+        // Returns null on HMAC mismatch
+        public static byte[] DecryptWithMessageKey(byte[] messageKey, byte[] cipherTextWithHmac, byte[] associatedData = null)
+        {
+            HkdfParameters parameters = new HkdfParameters(messageKey, ThirtyTwoZeros, MessageProtocolInfo);
+            HkdfBytesGenerator generator = new HkdfBytesGenerator(new Sha256Digest());
+            generator.Init(parameters);
+            
+            byte[] encryptionKey = new byte[32];
+            byte[] authenticationKey = new byte[32];
+            byte[] iv = new byte[16];
+
+            generator.GenerateBytes(encryptionKey, 0, encryptionKey.Length);
+            generator.GenerateBytes(authenticationKey, 0, authenticationKey.Length);
+            generator.GenerateBytes(iv, 0, iv.Length);
+            
+            return DecryptWithHmac(new AES256Key(encryptionKey), iv, new AES256Key(authenticationKey), cipherTextWithHmac,
+                associatedData);
+        }
+
+        // Returns a tuple of (new root key, new chain key)
+        public static (byte[], byte[]) RatchetRootKey(byte[] rootKey, byte[] dhOutput)
+        {
+            HkdfParameters parameters = new HkdfParameters(dhOutput, rootKey, RkRatchetProtocolInfo);
+            HkdfBytesGenerator generator = new HkdfBytesGenerator(new Sha256Digest());
+            generator.Init(parameters);
+            
+            byte[] newRootKey = new byte[rootKey.Length];
+            generator.GenerateBytes(newRootKey, 0, newRootKey.Length);
+            
+            HkdfParameters parameters2 = new HkdfParameters(dhOutput, rootKey, CkRatchetProtocolInfo);
+            generator.Init(parameters2);
+            
+            byte[] newChainKey = new byte[rootKey.Length];
+            generator.GenerateBytes(newChainKey, 0, newChainKey.Length);
+
+            return (newRootKey, newChainKey);
+        }
+
+        // Returns a tuple of (new chain key, new message key, new associated data (for message))
+        public static (byte[], byte[], byte[]) RatchetChainKey(byte[] chainKey)
+        {
+            HMACSHA256 hmac = new HMACSHA256(chainKey);
+            return (hmac.ComputeHash(CkRatchet2ProtocolInfo), hmac.ComputeHash(MkRatchetProtocolInfo),
+                hmac.ComputeHash(AdRatchetProtocolInfo));
         }
     }
 }
