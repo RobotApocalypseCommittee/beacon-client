@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
+using System.Text;
 using Xamarin.Forms;
 
 using BeaconClient.Crypto;
@@ -37,6 +38,16 @@ namespace BeaconClient
             {
                 await DisplayAlert("Wrongful Decryption Failed (This is good):", ex.ToString(), "Ok");
             }
+
+            byte[] associatedData = Encoding.UTF8.GetBytes("AD, not secret");
+            byte[] hmacTest = key.EncryptWithHmac(Encoding.UTF8.GetBytes("Secret text"), associatedData);
+            string decryptedHmac = Encoding.UTF8.GetString(key.DecryptWithHmac(hmacTest, key.IV, associatedData));
+            
+            byte[] associatedDataBad = Encoding.UTF8.GetBytes("AD has changed, not secret");
+            byte[] decryptedHmacBad = key.DecryptWithHmac(hmacTest, key.IV, associatedDataBad);
+
+            await DisplayAlert("HMAC Test",
+                $"Decrypted: {decryptedHmac}\nBad Decrypted is Null? {decryptedHmacBad is null}", "Ok");
             
             var watch = System.Diagnostics.Stopwatch.StartNew();
             _secureStorageService.Remove("hi");

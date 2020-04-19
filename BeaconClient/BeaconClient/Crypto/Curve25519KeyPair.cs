@@ -189,6 +189,11 @@ namespace BeaconClient.Crypto
             return output;
         }
 
+        public byte[] CalculateSharedSecret(Curve25519KeyPair otherKey)
+        {
+            return CalculateSharedSecret(otherKey.XPublicKey);
+        }
+
         public byte[] Sign(byte[] message)
         {
             // This is Ed25519.PointBytes + Ed25519.ScalarBytes

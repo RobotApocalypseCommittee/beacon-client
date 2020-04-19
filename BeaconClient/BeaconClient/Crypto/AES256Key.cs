@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace BeaconClient.Crypto
@@ -123,6 +125,34 @@ namespace BeaconClient.Crypto
             }
 
             return plainText;
+        }
+
+        public byte[] EncryptWithHmac(byte[] plainText, byte[] associatedData = null)
+        {
+            byte[] encrypted = Encrypt(plainText);
+            byte[] toHash = encrypted.Concat(IV).Concat(associatedData ?? new byte[1]).ToArray();
+            
+            HMACSHA256 hmac = new HMACSHA256(_provider.Key);
+            
+            byte[] hash = hmac.ComputeHash(toHash);
+
+            // Prepends hash to the encrypted message
+            return hash.Concat(encrypted).ToArray();
+        }
+
+        public byte[] DecryptWithHmac(byte[] cipherText, byte[] iv, byte[] associatedData = null)
+        {
+            byte[] hash = cipherText.Take(256 / 8).ToArray();
+            byte[] encrypted = new byte[cipherText.Length-256/8];
+            Array.Copy(cipherText, 256/8, encrypted, 0, encrypted.Length);
+            
+            // The associated data will default to an empty 0x00 byte
+            byte[] toHash = encrypted.Concat(iv).Concat(associatedData ?? new byte[1]).ToArray();
+            HMACSHA256 hmac = new HMACSHA256(_provider.Key);
+            byte[] hashCalculated = hmac.ComputeHash(toHash);
+            
+            // if the hashes don't match, return null
+            return !hash.SequenceEqual(hashCalculated) ? null : DecryptBytes(encrypted, iv);
         }
     }
 }
