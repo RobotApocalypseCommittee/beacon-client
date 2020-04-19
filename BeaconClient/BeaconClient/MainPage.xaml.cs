@@ -10,6 +10,7 @@ namespace BeaconClient
 {
     public partial class MainPage : ContentPage
     {
+        private const string ServerUrl = "http://127.0.0.1:8088";
         private readonly ISecureStorageService _secureStorageService = DependencyService.Get<ISecureStorageService>();
         
         public MainPage()
@@ -47,7 +48,6 @@ namespace BeaconClient
 
         private async void OnButton2Clicked(object sender, EventArgs e)
         {
-            string serverUrl = "https://localhost:8088";
             var preferences = Application.Current.Properties;
             
             string devicePrivateKeyBase64 = await _secureStorageService.GetAsync("devicePrivateKey");
@@ -67,38 +67,44 @@ namespace BeaconClient
             if (preferences.ContainsKey("deviceUuid"))
             {
                 deviceUuid = (string) preferences["deviceUuid"];
-                connection = new ServerConnection(serverUrl, deviceKeyPair, deviceUuid);
+                connection = new ServerConnection(ServerUrl, deviceKeyPair, deviceUuid);
             }
             else
             {
-                connection = new ServerConnection(serverUrl, deviceKeyPair);
+                connection = new ServerConnection(ServerUrl, deviceKeyPair);
                 deviceUuid = await connection.RegisterDeviceAsync();
                 preferences["deviceUuid"] = deviceUuid;
+                await Application.Current.SavePropertiesAsync();
             }
 
             await DisplayAlert("Info", $"Device UUID: {deviceUuid}", "Ok");
 
             string userUuid;
             Curve25519KeyPair userKeyPair;
+            Curve25519KeyPair signedPreKeyPair;
             if (preferences.ContainsKey("userUuid"))
             {
                 userUuid = (string) preferences["userUuid"];
 
                 string userPrivateKeyBase64 = await _secureStorageService.GetAsync("userPrivateKey");
-                if (userPrivateKeyBase64 is null)
+                string userSignedPreKeyBase64 = await _secureStorageService.GetAsync("userSignedPreKey");
+                if (userPrivateKeyBase64 is null || userSignedPreKeyBase64 is null)
                 {
-                    throw new Exception("User Uuid found, but no private key!");
+                    throw new Exception("User Uuid found, but no private key or signed prekey!");
                 }
                 
                 userKeyPair = new Curve25519KeyPair(Convert.FromBase64String(userPrivateKeyBase64), true, true);
+                signedPreKeyPair = new Curve25519KeyPair(Convert.FromBase64String(userSignedPreKeyBase64), true, false);
             }
             else
             {
                 userKeyPair = new Curve25519KeyPair();
+                signedPreKeyPair = new Curve25519KeyPair();
 
-                userUuid = await connection.RegisterUserAsync("jane.evans@gmail.com", userKeyPair, "Jevans", "Coolest alive");
+                userUuid = await connection.RegisterUserAsync("jane.evans@gmail.com", userKeyPair, signedPreKeyPair, "Jevans", "Coolest alive");
                 preferences["userUuid"] = userUuid;
                 await _secureStorageService.SetAsync("userPrivateKey", Convert.ToBase64String(userKeyPair.EdPrivateKey));
+                await _secureStorageService.SetAsync("userSignedPreKey", Convert.ToBase64String(signedPreKeyPair.XPrivateKey));
             }
             
             await DisplayAlert("Info", $"User UUID: {userUuid}", "Ok");

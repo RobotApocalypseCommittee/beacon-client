@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 using BeaconClient.Crypto;
 using Newtonsoft.Json;
@@ -64,7 +65,7 @@ namespace BeaconClient.Server
             // Todo handle stuff like "not authorised" by automatically redoing requests using an enum for return possibilities
             if (!response.IsSuccessStatusCode)
             {
-                throw new ServerConnectionException($"The server responded with {response.StatusCode}: {response.ReasonPhrase}. The content of the server reponse is:\n{response.Content}");
+                throw new ServerConnectionException($"The server responded with {response.StatusCode}: {response.ReasonPhrase}. The content of the server reponse is:\n{await response.Content.ReadAsStringAsync()}");
             }
 
             string responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -112,12 +113,12 @@ namespace BeaconClient.Server
             Dictionary<string, string> contentDict)
         {
             string contentString = JsonConvert.SerializeObject(contentDict);
-            HttpContent content = new StringContent(contentString);
+            HttpContent content = new StringContent(contentString, Encoding.UTF8, "application/json");
 
             return await PostAuthenticatedAsync(endpoint, content).ConfigureAwait(false);
         }
 
-        // Returns the UUID as a string, as well as setting it for this ServerConnection
+        // Returns the Device UUID as a string, as well as setting it for this ServerConnection
         public async Task<string> RegisterDeviceAsync()
         {
             if (!(_deviceUuid is null))
@@ -130,9 +131,9 @@ namespace BeaconClient.Server
                 {"public_key", Convert.ToBase64String(_deviceKey.EdPublicKey)}
             };
             string contentString = JsonConvert.SerializeObject(contentDict);
-            HttpContent content = new StringContent(contentString);
+            HttpContent content = new StringContent(contentString, Encoding.UTF8, "application/json");
 
-            HttpResponseMessage response = await PostAsync("/devices/register", content).ConfigureAwait(false);
+            HttpResponseMessage response = await PostAsync("/devices/new", content).ConfigureAwait(false);
             Dictionary<string, string> responseDict = await HandleResponse(response).ConfigureAwait(false);
             
             if (!responseDict.ContainsKey("device_id"))
@@ -146,18 +147,20 @@ namespace BeaconClient.Server
         }
 
         // Returns the User UUID
-        public async Task<string> RegisterUserAsync(string email, Curve25519KeyPair userKeyPair, string nickname = null,
+        public async Task<string> RegisterUserAsync(string email, Curve25519KeyPair userKeyPair, Curve25519KeyPair signedPreKeyPair, string nickname = null,
             string bio = null)
         {
             Dictionary<string, string> contentDict = new Dictionary<string, string>
             {
                 {"email", email},
-                {"public_key", Convert.ToBase64String(userKeyPair.EdPublicKey)},
+                {"identity_key", Convert.ToBase64String(userKeyPair.EdPublicKey)},
+                {"signed_prekey", Convert.ToBase64String(signedPreKeyPair.XPublicKey)},
+                {"prekey_signature", Convert.ToBase64String(userKeyPair.Sign(signedPreKeyPair.XPublicKey))},
                 {"nickname", nickname},
                 {"bio", bio}
             };
             
-            HttpResponseMessage response = await PostAuthenticatedAsync("/users/register", contentDict).ConfigureAwait(false);
+            HttpResponseMessage response = await PostAuthenticatedAsync("/users/new", contentDict).ConfigureAwait(false);
             Dictionary<string, string> responseDict = await HandleResponse(response).ConfigureAwait(false);
 
             if (!responseDict.ContainsKey("user_id"))
