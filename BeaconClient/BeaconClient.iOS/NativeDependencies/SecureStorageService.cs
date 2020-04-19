@@ -1,11 +1,13 @@
 ﻿using System.Threading.Tasks;
 using BeaconClient.NativeDependencies;
+using Foundation;
 using Xamarin.Essentials;
 using Xamarin.Forms;
 
 [assembly: Dependency(typeof(BeaconClient.iOS.NativeDependencies.SecureStorageService))]
 namespace BeaconClient.iOS.NativeDependencies
 {
+    [Preserve(AllMembers = true)]
     public class SecureStorageService : ISecureStorageService
     {
         public async Task SetAsync(string key, string value)
