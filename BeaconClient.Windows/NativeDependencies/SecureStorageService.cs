@@ -12,30 +12,37 @@ namespace BeaconClient.Windows.NativeDependencies
     {
         public async Task SetAsync(string key, string value)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(value);
-
-            byte[] encBytes = ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser);
-            Application.Current.Properties[key] = Convert.ToBase64String(encBytes);
-            await Application.Current.SavePropertiesAsync().ConfigureAwait(false);
-        }
-
-#pragma warning disable 1998
-        public async Task<string> GetAsync(string key)
-#pragma warning restore 1998
-        {
-            if (Application.Current.Properties.TryGetValue(key, out var encString))
+            await Task.Run(async () =>
             {
+                byte[] bytes = Encoding.UTF8.GetBytes(value);
+
+                byte[] encBytes = ProtectedData.Protect(bytes, null, DataProtectionScope.CurrentUser);
+                Application.Current.Properties[key] = Convert.ToBase64String(encBytes);
+                await Application.Current.SavePropertiesAsync().ConfigureAwait(false);
+            });
+        }
+        
+        public async Task<string> GetAsync(string key)
+        {
+            return await Task.Run(() =>
+            {
+                if (!Application.Current.Properties.TryGetValue(key, out var encString))
+                    return null;
+                
                 byte[] encBytes = Convert.FromBase64String((string) encString);
                 byte[] bytes = ProtectedData.Unprotect(encBytes, null, DataProtectionScope.CurrentUser);
 
                 return Encoding.UTF8.GetString(bytes);
-            }
 
-            return null;
+            });
         }
 
         public bool Remove(string key)
         {
+            // If it doesn't exist, we should return true
+            if (!Application.Current.Properties.ContainsKey(key))
+                return true;
+            
             bool success = Application.Current.Properties.Remove(key);
             Application.Current.SavePropertiesAsync();
             return success;

@@ -10,6 +10,8 @@ namespace BeaconClient
 {
     public partial class MainPage : ContentPage
     {
+        private readonly ISecureStorageService _secureStorageService = DependencyService.Get<ISecureStorageService>();
+        
         public MainPage()
         {
             InitializeComponent();
@@ -35,21 +37,25 @@ namespace BeaconClient
             {
                 await DisplayAlert("Wrongful Decryption Failed (This is good):", ex.ToString(), "Ok");
             }
+            
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            _secureStorageService.Remove("hi");
+            await _secureStorageService.SetAsync("hi", "epic gamer");
+            watch.Stop();
+            await DisplayAlert("SecureStorage", $"{await _secureStorageService.GetAsync("hi")}\n{watch.ElapsedMilliseconds} ms", "Ok");
         }
 
         private async void OnButton2Clicked(object sender, EventArgs e)
         {
             string serverUrl = "https://localhost:8088";
-
-            ISecureStorageService secureStorageService = DependencyService.Get<ISecureStorageService>();
             var preferences = Application.Current.Properties;
             
-            string devicePrivateKeyBase64 = await secureStorageService.GetAsync("devicePrivateKey");
+            string devicePrivateKeyBase64 = await _secureStorageService.GetAsync("devicePrivateKey");
             Curve25519KeyPair deviceKeyPair;
             if (devicePrivateKeyBase64 is null)
             {
                 deviceKeyPair = new Curve25519KeyPair();
-                await secureStorageService.SetAsync("devicePrivateKey", Convert.ToBase64String(deviceKeyPair.EdPrivateKey));
+                await _secureStorageService.SetAsync("devicePrivateKey", Convert.ToBase64String(deviceKeyPair.EdPrivateKey));
             }
             else
             {
@@ -78,7 +84,7 @@ namespace BeaconClient
             {
                 userUuid = (string) preferences["userUuid"];
 
-                string userPrivateKeyBase64 = await secureStorageService.GetAsync("userPrivateKey");
+                string userPrivateKeyBase64 = await _secureStorageService.GetAsync("userPrivateKey");
                 if (userPrivateKeyBase64 is null)
                 {
                     throw new Exception("User Uuid found, but no private key!");
@@ -92,7 +98,7 @@ namespace BeaconClient
 
                 userUuid = await connection.RegisterUserAsync("jane.evans@gmail.com", userKeyPair, "Jevans", "Coolest alive");
                 preferences["userUuid"] = userUuid;
-                await secureStorageService.SetAsync("userPrivateKey", Convert.ToBase64String(userKeyPair.EdPrivateKey));
+                await _secureStorageService.SetAsync("userPrivateKey", Convert.ToBase64String(userKeyPair.EdPrivateKey));
             }
             
             await DisplayAlert("Info", $"User UUID: {userUuid}", "Ok");
