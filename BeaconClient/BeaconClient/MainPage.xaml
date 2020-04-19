@@ -17,6 +17,18 @@
                 Clicked="OnButton2Clicked"
                 VerticalOptions="CenterAndExpand"
                 HorizontalOptions="Center" />
+        <Entry Text="http://localhost:8088"
+               x:Name="ServerEntry"
+               VerticalOptions="CenterAndExpand"
+               HorizontalOptions="Center" />
+        <Entry Text="jane.evans@gmail.com"
+               x:Name="EmailEntry"
+               VerticalOptions="CenterAndExpand"
+               HorizontalOptions="Center" />
+        <Button Text="Clear"
+                Clicked="OnClearClicked"
+                VerticalOptions="CenterAndExpand"
+                HorizontalOptions="Center" />
 
     </StackLayout>
 

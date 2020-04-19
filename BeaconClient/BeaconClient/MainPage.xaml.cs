@@ -10,7 +10,6 @@ namespace BeaconClient
 {
     public partial class MainPage : ContentPage
     {
-        private const string ServerUrl = "http://127.0.0.1:8088";
         private readonly ISecureStorageService _secureStorageService = DependencyService.Get<ISecureStorageService>();
         
         public MainPage()
@@ -30,8 +29,8 @@ namespace BeaconClient
             await DisplayAlert("Decrypted:", key.DecryptString(cipherText, iv), "Ok");
 
             try
-            {
-                key = CryptoUtils.DeriveMasterKey("wrong boi", "jane.evans@westminster.org.uk");
+            { 
+                CryptoUtils.DeriveMasterKey("wrong boi", "jane.evans@westminster.org.uk");
                 await DisplayAlert("Wrong Password Decryption:", key.DecryptString(cipherText, iv), "Ok");
             }
             catch (CryptographicException ex)
@@ -49,6 +48,8 @@ namespace BeaconClient
         private async void OnButton2Clicked(object sender, EventArgs e)
         {
             var preferences = Application.Current.Properties;
+
+            string serverUrl = ServerEntry.Text;
             
             string devicePrivateKeyBase64 = await _secureStorageService.GetAsync("devicePrivateKey");
             Curve25519KeyPair deviceKeyPair;
@@ -67,11 +68,11 @@ namespace BeaconClient
             if (preferences.ContainsKey("deviceUuid"))
             {
                 deviceUuid = (string) preferences["deviceUuid"];
-                connection = new ServerConnection(ServerUrl, deviceKeyPair, deviceUuid);
+                connection = new ServerConnection(serverUrl, deviceKeyPair, deviceUuid);
             }
             else
             {
-                connection = new ServerConnection(ServerUrl, deviceKeyPair);
+                connection = new ServerConnection(serverUrl, deviceKeyPair);
                 deviceUuid = await connection.RegisterDeviceAsync();
                 preferences["deviceUuid"] = deviceUuid;
                 await Application.Current.SavePropertiesAsync();
@@ -101,13 +102,21 @@ namespace BeaconClient
                 userKeyPair = new Curve25519KeyPair();
                 signedPreKeyPair = new Curve25519KeyPair();
 
-                userUuid = await connection.RegisterUserAsync("jane.evans@gmail.com", userKeyPair, signedPreKeyPair, "Jevans", "Coolest alive");
+                userUuid = await connection.RegisterUserAsync(EmailEntry.Text, userKeyPair, signedPreKeyPair, "Jevans", "Coolest alive");
                 preferences["userUuid"] = userUuid;
                 await _secureStorageService.SetAsync("userPrivateKey", Convert.ToBase64String(userKeyPair.EdPrivateKey));
                 await _secureStorageService.SetAsync("userSignedPreKey", Convert.ToBase64String(signedPreKeyPair.XPrivateKey));
             }
             
             await DisplayAlert("Info", $"User UUID: {userUuid}", "Ok");
+        }
+
+        private void OnClearClicked(object sender, EventArgs e)
+        {
+            var preferences = Application.Current.Properties;
+
+            preferences.Remove("userUuid");
+            preferences.Remove("deviceUuid");
         }
     }
 }
