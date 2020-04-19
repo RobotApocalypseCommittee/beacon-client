@@ -26,6 +26,8 @@ namespace BeaconClient.Crypto
         public byte[] EdPublicKey => _edPublicKey;
         public byte[] XPublicKey => _XpublicKey;
         
+        // TODO add exceptions for operations with missing keys
+        
         public Curve25519KeyPair()
         {
             byte[] privateKey;
@@ -60,38 +62,65 @@ namespace BeaconClient.Crypto
             _XpublicKey = xPublicKey;
         }
 
-        public Curve25519KeyPair(byte[] key, bool isPrivate)
+        public Curve25519KeyPair(byte[] key, bool isPrivate, bool isEd25519)
         {
-            // MUST be an Ed25519 key!
-            if (isPrivate)
+            // both can only be recovered if the input is an edwards key
+            if (isEd25519)
             {
-                _edPrivateKey = key;
-                
-                byte[] xPrivateKey = ConvertEdPrivateKeyToMontgomery(key);
-                
-                byte[] edPublicKey = new byte[Ed25519PublicKeyParameters.KeySize];
-                Ed25519.GeneratePublicKey(key, 0, edPublicKey, 0);
-            
-                byte[] xPublicKey = new byte[X25519PublicKeyParameters.KeySize];
-                X25519.GeneratePublicKey(xPrivateKey, 0, xPublicKey, 0);
-
-                if (!xPublicKey.SequenceEqual(ConvertEdPublicKeyToMontgomery(edPublicKey)))
+                if (isPrivate)
                 {
-                    throw new CryptographicException("The supplied Ed25519 private key is invalid for use: please use another.");
-                }
+                    _edPrivateKey = key;
 
-                _XprivateKey = xPrivateKey;
-                
-                _edPublicKey = edPublicKey;
-                _XpublicKey = xPublicKey;
+                    byte[] xPrivateKey = ConvertEdPrivateKeyToMontgomery(key);
+
+                    byte[] edPublicKey = new byte[Ed25519PublicKeyParameters.KeySize];
+                    Ed25519.GeneratePublicKey(key, 0, edPublicKey, 0);
+
+                    byte[] xPublicKey = new byte[X25519PublicKeyParameters.KeySize];
+                    X25519.GeneratePublicKey(xPrivateKey, 0, xPublicKey, 0);
+
+                    if (!xPublicKey.SequenceEqual(ConvertEdPublicKeyToMontgomery(edPublicKey)))
+                    {
+                        throw new CryptographicException(
+                            "The supplied Ed25519 private key is invalid for use: please use another.");
+                    }
+
+                    _XprivateKey = xPrivateKey;
+
+                    _edPublicKey = edPublicKey;
+                    _XpublicKey = xPublicKey;
+                }
+                else
+                {
+                    _edPublicKey = key;
+                    _edPrivateKey = null;
+
+                    _XpublicKey = ConvertEdPublicKeyToMontgomery(key);
+                    _XprivateKey = null;
+                }
             }
             else
             {
-                _edPublicKey = key;
-                _edPrivateKey = null;
-                
-                _XpublicKey = ConvertEdPublicKeyToMontgomery(key);
-                _XprivateKey = null;
+                if (isPrivate)
+                {
+                    _XprivateKey = key;
+                    
+                    byte[] xPublicKey = new byte[X25519PublicKeyParameters.KeySize];
+                    X25519.GeneratePublicKey(key, 0, xPublicKey, 0);
+
+                    _XpublicKey = xPublicKey;
+                    
+                    _edPublicKey = null;
+                    _edPrivateKey = null;
+                }
+                else
+                {
+                    _XpublicKey = key;
+                    
+                    _XprivateKey = null;
+                    _edPublicKey = null;
+                    _edPrivateKey = null;
+                }
             }
         }
 
