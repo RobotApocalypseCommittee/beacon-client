@@ -30,8 +30,8 @@ namespace BeaconClient
 
             try
             { 
-                CryptoUtils.DeriveMasterKey("wrong boi", "jane.evans@westminster.org.uk");
-                await DisplayAlert("Wrong Password Decryption:", key.DecryptString(cipherText, iv), "Ok");
+                AES256Key wrongKey = CryptoUtils.DeriveMasterKey("wrong boi", "jane.evans@westminster.org.uk");
+                await DisplayAlert("Wrong Password Decryption:", wrongKey.DecryptString(cipherText, iv), "Ok");
             }
             catch (CryptographicException ex)
             {
