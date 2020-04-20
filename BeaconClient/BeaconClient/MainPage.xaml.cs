@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.IO.IsolatedStorage;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using Xamarin.Forms;
@@ -125,7 +129,7 @@ namespace BeaconClient
 
         private void OnClearClicked(object sender, EventArgs e)
         {
-            var preferences = Application.Current.Properties;
+            var preferences = _preferencesService;
 
             preferences.Remove("userUuid");
             preferences.Remove("deviceUuid");
