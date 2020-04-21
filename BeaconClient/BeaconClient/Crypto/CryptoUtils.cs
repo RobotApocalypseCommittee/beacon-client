@@ -59,7 +59,7 @@ namespace BeaconClient.Crypto
             return output;
         }
 
-        public static AES256Key DeriveX3DhSecretSender(Curve25519KeyPair selfIdentityKeyPair, Curve25519KeyPair ephemeralKeyPair,
+        public static byte[] DeriveX3DhSecretSender(Curve25519KeyPair selfIdentityKeyPair, Curve25519KeyPair ephemeralKeyPair,
             Curve25519KeyPair otherIdentityKey, Curve25519KeyPair otherSignedPreKey,
             Curve25519KeyPair otherOneTimePreKey = null)
         {
@@ -75,11 +75,10 @@ namespace BeaconClient.Crypto
                 dhConcat = dhConcat.Concat(dh4);
             }
 
-            byte[] sharedSecret = X3DhKdf(dhConcat.ToArray(), X3DhProtocolInfo);
-            return new AES256Key(sharedSecret);
+            return X3DhKdf(dhConcat.ToArray(), X3DhProtocolInfo);
         }
 
-        public static AES256Key DeriveX3DhSecretReceiver(Curve25519KeyPair selfIdentityKeyPair,
+        public static byte[] DeriveX3DhSecretReceiver(Curve25519KeyPair selfIdentityKeyPair,
             Curve25519KeyPair selfSignedPreKeyPair, Curve25519KeyPair otherIdentityKey, Curve25519KeyPair ephemeralKey,
             Curve25519KeyPair selfOneTimePreKeyPair = null)
         {
@@ -95,11 +94,10 @@ namespace BeaconClient.Crypto
                 dhConcat = dhConcat.Concat(dh4);
             }
 
-            byte[] sharedSecret = X3DhKdf(dhConcat.ToArray(), X3DhProtocolInfo);
-            return new AES256Key(sharedSecret);
+            return X3DhKdf(dhConcat.ToArray(), X3DhProtocolInfo);
         }
 
-        public static byte[] CalculateAssociatedData(Curve25519KeyPair identityKeyA,
+        public static byte[] CalculateInitialAssociatedData(Curve25519KeyPair identityKeyA,
             Curve25519KeyPair identityKeyB)
         {
             return identityKeyA.XPublicKey.Concat(identityKeyB.XPublicKey).ToArray();

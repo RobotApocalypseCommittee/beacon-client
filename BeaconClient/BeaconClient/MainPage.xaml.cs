@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.IsolatedStorage;
@@ -8,6 +9,8 @@ using System.Text;
 using Xamarin.Forms;
 
 using BeaconClient.Crypto;
+using BeaconClient.Database;
+using BeaconClient.Messages;
 using BeaconClient.NativeDependencies;
 using BeaconClient.Server;
 
@@ -17,54 +20,21 @@ namespace BeaconClient
     {
         private readonly ISecureStorageService _secureStorageService = DependencyService.Get<ISecureStorageService>();
         private readonly IPreferencesService _preferencesService = DependencyService.Get<IPreferencesService>();
+
+        private ServerConnection _connection;
         
         public MainPage()
         {
             InitializeComponent();
-        }
-
-        private async void OnButtonClicked(object sender, EventArgs e)
-        {
-            AES256Key key = CryptoUtils.DeriveMasterKey("secure boi", "jane.evans@westminster.org.uk");
-            // Just an example
-            byte[] mKey = new AES256Key().Key;
-
-            byte[] plainText = Encoding.UTF8.GetBytes("SECRET");
-            byte[] associatedData = Encoding.UTF8.GetBytes("AD, Not secret");
-            byte[] cipherTextWithHmac = CryptoUtils.EncryptWithMessageKey(mKey, plainText, associatedData);
-            string plainTextDecrypted = Encoding.UTF8.GetString(CryptoUtils.DecryptWithMessageKey(mKey, cipherTextWithHmac, associatedData));
             
-            byte[] associatedDataBad = Encoding.UTF8.GetBytes("AD, wrong");
-            byte[] mKeyBad = new AES256Key().Key;
-
-            byte[] plainTextDecryptedAdBad = 
-                CryptoUtils.DecryptWithMessageKey(mKey, cipherTextWithHmac, associatedDataBad);
-
-            await DisplayAlert("Message Keys",
-                $"Decrypted: {plainTextDecrypted}\nAD Bad null? {plainTextDecryptedAdBad is null}", "Ok");
-
-            try
-            {
-                byte[] plainTextDecryptedKeyBad =
-                    CryptoUtils.DecryptWithMessageKey(mKeyBad, cipherTextWithHmac, associatedData);
-                await DisplayAlert("Bad Key gives null? (True is good)", (plainTextDecryptedKeyBad is null).ToString(), "Ok");
-            }
-            catch (CryptographicException ex)
-            {
-                await DisplayAlert("Bad Key Failed :)", ex.ToString(), "Ok");
-            }
-
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-            _secureStorageService.Remove("hi");
-            await _secureStorageService.SetAsync("hi", "epic gamer");
-            watch.Stop();
-            await DisplayAlert("SecureStorage", $"{await _secureStorageService.GetAsync("hi")}\n{watch.ElapsedMilliseconds} ms", "Ok");
+            Curve25519KeyPair identityKey = new Curve25519KeyPair();
+            Curve25519KeyPair signedPreKey = new Curve25519KeyPair();
+            Curve25519KeyPair oneTimePreKey = new Curve25519KeyPair();
+            GlobalKeyStore.Initialise(identityKey, new List<Curve25519KeyPair>{signedPreKey}, new List<Curve25519KeyPair>{oneTimePreKey}, new Dictionary<string, ChatState>());
         }
 
-        private async void OnButton2Clicked(object sender, EventArgs e)
+        private async void OnSetUpPressed(object sender, EventArgs e)
         {
-            var preferences = _preferencesService;
-
             string serverUrl = ServerEntry.Text;
             
             string devicePrivateKeyBase64 = await _secureStorageService.GetAsync("devicePrivateKey");
@@ -78,53 +48,48 @@ namespace BeaconClient
             {
                 deviceKeyPair = new Curve25519KeyPair(Convert.FromBase64String(devicePrivateKeyBase64), true, true);
             }
-
-            ServerConnection connection;
-            string deviceUuid;
-            if (preferences.ContainsKey("deviceUuid"))
-            {
-                deviceUuid = preferences.Get("deviceUuid", null);
-                connection = new ServerConnection(serverUrl, deviceKeyPair, deviceUuid);
-            }
-            else
-            {
-                connection = new ServerConnection(serverUrl, deviceKeyPair);
-                deviceUuid = await connection.RegisterDeviceAsync();
-                preferences.Set("deviceUuid", deviceUuid);
-                await Application.Current.SavePropertiesAsync();
-            }
-
-            await DisplayAlert("Info", $"Device UUID: {deviceUuid}", "Ok");
-
-            string userUuid;
-            Curve25519KeyPair userKeyPair;
-            Curve25519KeyPair signedPreKeyPair;
-            if (preferences.ContainsKey("userUuid"))
-            {
-                userUuid = preferences.Get("userUuid", null);
-
-                string userPrivateKeyBase64 = await _secureStorageService.GetAsync("userPrivateKey");
-                string userSignedPreKeyBase64 = await _secureStorageService.GetAsync("userSignedPreKey");
-                if (userPrivateKeyBase64 is null || userSignedPreKeyBase64 is null)
-                {
-                    throw new Exception("User Uuid found, but no private key or signed prekey!");
-                }
-                
-                userKeyPair = new Curve25519KeyPair(Convert.FromBase64String(userPrivateKeyBase64), true, true);
-                signedPreKeyPair = new Curve25519KeyPair(Convert.FromBase64String(userSignedPreKeyBase64), true, false);
-            }
-            else
-            {
-                userKeyPair = new Curve25519KeyPair();
-                signedPreKeyPair = new Curve25519KeyPair();
-
-                userUuid = await connection.RegisterUserAsync(EmailEntry.Text, userKeyPair, signedPreKeyPair, "Jevans", "Coolest alive");
-                preferences.Set("userUuid", userUuid);
-                await _secureStorageService.SetAsync("userPrivateKey", Convert.ToBase64String(userKeyPair.EdPrivateKey));
-                await _secureStorageService.SetAsync("userSignedPreKey", Convert.ToBase64String(signedPreKeyPair.XPrivateKey));
-            }
             
-            await DisplayAlert("Info", $"User UUID: {userUuid}", "Ok");
+            _connection = new ServerConnection(serverUrl, deviceKeyPair);
+            
+            string deviceUuid = await _connection.RegisterDeviceAsync();
+            string userUuid = await _connection.RegisterUserAsync(EmailEntry.Text, GlobalKeyStore.Instance.IdentityKeyPair, GlobalKeyStore.Instance.SignedPreKeyPairs[0], ":)", "Non-contradictory");
+
+            await _connection.UploadOneTimePreKeysAsync(GlobalKeyStore.Instance.OneTimePreKeyPairs);
+
+            await DisplayAlert("Information: ", $"Device ID: {deviceUuid}\nUser ID: {userUuid}", "Ok");
+            EmailEntry.Text = userUuid;
+        }
+
+        private async void OnSendInitialMessagePressed(object sender, EventArgs e)
+        {
+            string recipientUuid = RecipientUuid.Text;
+            string messageText = Message.Text;
+
+            ChatPackage chatPackage = await _connection.GetChatPackage(recipientUuid);
+
+            MetaMessage initialMessage = MessageUtils.ComposeInitialMessage(recipientUuid, chatPackage, messageText);
+
+            await _connection.SendMessageAsync(initialMessage);
+        }
+        
+        private async void OnSendNormalMessagePressed(object sender, EventArgs e)
+        {
+            string recipientUuid = RecipientUuid.Text;
+            string messageText = Message.Text;
+
+            MetaMessage textMessage = MessageUtils.ComposeNormalTextMessage(recipientUuid, messageText);
+
+            await _connection.SendMessageAsync(textMessage);
+        }
+
+        private async void OnCheckMailboxPressed(object sender, EventArgs e)
+        {
+            IEnumerable<MetaMessage> messages = await _connection.CheckMailboxAsync();
+
+            foreach (var message in messages)
+            {
+                MessageUtils.HandleMessage(message);
+            }
         }
 
         private void OnClearClicked(object sender, EventArgs e)
