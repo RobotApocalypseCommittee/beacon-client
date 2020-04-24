@@ -53,7 +53,7 @@ steps:
   displayName: "Install iOS Signing Certificate"
 - task: InstallAppleProvisioningProfile@1
   inputs:
-    provProfileSecureFile: 'BeaconClient11Apr2019.mobileprovision' # I seriously blanked on the year
+    provProfileSecureFile: '$(ProvisioningProfileFileName)' # I seriously blanked on the year
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Install iOS Provisioning Profile"
 - task: XamariniOS@2
