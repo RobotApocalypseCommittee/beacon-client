@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:beaconClient="clr-namespace:BeaconClient;assembly=BeaconClient"
+             x:Class="BeaconClient.Chats"
+             Title="Beacon" NavigationPage.HasNavigationBar="True">
+    <ContentPage.Resources>
+        <beaconClient:DateChatPreviewConverter x:Key="DateConvert" />
+        <beaconClient:RecentChatPreviewConverter x:Key="Shortener" />
+    </ContentPage.Resources>
+    <ContentPage.Content>
+        <ListView x:Name="MainListView" 
+                  ItemsSource="{Binding ChatPreviews}"
+                  ItemSelected="OnListViewItemSelected"
+                  ItemTapped="OnListViewItemTapped"
+                  HasUnevenRows="True"
+                  BackgroundColor="#5F0F40">
+            
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <Grid Padding="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="0.8*"></ColumnDefinition>
+                                <ColumnDefinition Width="0.2*"></ColumnDefinition>
+                                
+                            </Grid.ColumnDefinitions>
+                            
+                            <Label Grid.Column="0"
+                                   Grid.Row="1"
+                                   Text="{Binding Name}"
+                                   HorizontalTextAlignment="Start"
+                                   FontSize="20"
+                                   TextColor="#fb8b24"
+                                   FontAttributes="Bold" />
+                            <Label Grid.Row="2"
+                                   Grid.Column="0"
+                                   HorizontalTextAlignment="Start"
+                                   Text="{Binding Recent, Converter={StaticResource Shortener}}"
+                                   TextColor="#fb8b24"/>
+                            <Label Grid.Row="2"
+                                   Grid.Column="1"
+                                   TextColor="#fb8b24"
+                                   HorizontalTextAlignment="End"
+                                   Text="{Binding LastActivity, Converter={StaticResource DateConvert}}"/>
+                        </Grid>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+            
+                  
+
+    </ContentPage.Content>
+</ContentPage>

@@ -33,6 +33,11 @@ namespace BeaconClient
             GlobalKeyStore.Initialise(identityKey, new List<Curve25519KeyPair>{signedPreKey}, new List<Curve25519KeyPair>{oneTimePreKey}, new Dictionary<string, ChatState>());
         }
 
+        private async void Test(object sender, EventArgs e)
+        {
+            await Navigation.PushAsync(new BeaconClient.Chats());
+        }
+
         private async void OnSetUpPressed(object sender, EventArgs e)
         {
             string serverUrl = ServerEntry.Text;

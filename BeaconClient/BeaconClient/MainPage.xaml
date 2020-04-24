@@ -6,6 +6,10 @@
 
     <StackLayout>
         <!-- Place new controls here -->
+        <Button Text="Test GUI"
+                Clicked="Test"
+                VerticalOptions="Center"
+                HorizontalOptions="CenterAndExpand" />
         <Label Text="Welcome to Joemama!" 
            HorizontalOptions="Center"
            VerticalOptions="CenterAndExpand" />

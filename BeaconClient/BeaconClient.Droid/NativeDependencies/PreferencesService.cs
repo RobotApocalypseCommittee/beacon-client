@@ -2,8 +2,8 @@
 using Xamarin.Essentials;
 using Xamarin.Forms;
 
-[assembly: Dependency(typeof(BeaconClient.Android.NativeDependencies.PreferencesService))]
-namespace BeaconClient.Android.NativeDependencies
+[assembly: Dependency(typeof(BeaconClient.Droid.NativeDependencies.PreferencesService))]
+namespace BeaconClient.Droid.NativeDependencies
 {
     public class PreferencesService : IPreferencesService
     {

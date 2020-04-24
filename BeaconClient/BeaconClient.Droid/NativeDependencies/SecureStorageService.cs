@@ -3,8 +3,8 @@ using BeaconClient.NativeDependencies;
 using Xamarin.Essentials;
 using Xamarin.Forms;
 
-[assembly: Dependency(typeof(BeaconClient.Android.NativeDependencies.SecureStorageService))]
-namespace BeaconClient.Android.NativeDependencies
+[assembly: Dependency(typeof(BeaconClient.Droid.NativeDependencies.SecureStorageService))]
+namespace BeaconClient.Droid.NativeDependencies
 {
     public class SecureStorageService : ISecureStorageService
     {
