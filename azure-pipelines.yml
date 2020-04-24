@@ -28,7 +28,7 @@ steps:
 # Android
 - task: XamarinAndroid@1
   inputs:
-    projectFile: 'BeaconClient/BeaconClient.Android/BeaconClient.Android.csproj'
+    projectFile: 'BeaconClient/BeaconClient.Droid/BeaconClient.Droid.csproj'
     outputDirectory: '$(Build.ArtifactStagingDirectory)'
     configuration: '$(buildConfiguration)'
     msbuildArguments: '/p:AndroidUseSharedRuntime="false" /p:EmbedAssembliesIntoApk="true"' # Overrides normal settings for this build
