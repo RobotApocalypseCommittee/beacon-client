@@ -47,8 +47,11 @@ steps:
 # iOS
 - task: InstallAppleCertificate@2
   inputs:
-    certSecureFile: 'RACDev.p12'
-    certPwd: '$(P12password)'
+    certSecureFile: '$(P12file)'
+    ${{ if eq($(P12choice), 'A') }}:
+      certPwd: '$(P12password)'
+    ${{ if eq($(P12choice), 'B') }}:
+      certPwd: '$(P12passwordB)'
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Install iOS Signing Certificate"
 - task: InstallAppleProvisioningProfile@1
