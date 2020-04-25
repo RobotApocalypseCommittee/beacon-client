@@ -48,9 +48,9 @@ steps:
 - task: InstallAppleCertificate@2
   inputs:
     certSecureFile: '$(P12file)'
-    ${{ if eq($(P12choice), 'A') }}:
+    ${{ if eq(variables['P12choice'], 'A') }}:
       certPwd: '$(P12password)'
-    ${{ if eq($(P12choice), 'B') }}:
+    ${{ if eq(variables['P12choice'], 'B') }}:
       certPwd: '$(P12passwordB)'
   condition: eq( variables['Agent.OS'], 'Darwin' )
   displayName: "Install iOS Signing Certificate"
