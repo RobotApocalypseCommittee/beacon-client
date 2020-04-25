@@ -27,19 +27,15 @@ namespace BeaconClient
                 {
                     Name = "Bhuvan Belur",
                     LastActivity = new DateTime(2020, 4, 24, 20, 52, 30),
-                    Recent = "Hey! What's up! I found this new game called DF2 - you should check it out!"
-                },
-                new ChatPreview()
-                {
-                    Name = "Tim Timson",
-                    LastActivity = new DateTime(2020, 4, 21, 5, 30, 2),
-                    Recent = "Hey, do you know when the next homework assignment is due?! The teacher didn't say and for some reason I can't load our tasks webpage. :("
+                    Recent = "Hey! What's up! I found this new game called DF2 - you should check it out!",
+                    ChatID = 1
                 },
                 new ChatPreview()
                 {
                     Name = "Atto Allas",
                     LastActivity = new DateTime(2020, 4, 23, 3, 30, 2),
-                    Recent = "Not to uh flex, but who's joe?"
+                    Recent = "Who's Joe?",
+                    ChatID = 2
                 }
             };
            SetChats(test);
@@ -47,6 +43,11 @@ namespace BeaconClient
     
 
 
+        }
+
+        protected override void OnAppearing()
+        {
+            MainListView.SelectedItem = null;
         }
 
         public void SetChats(List<ChatPreview> chats)
@@ -60,11 +61,15 @@ namespace BeaconClient
         void OnListViewItemSelected(object sender, SelectedItemChangedEventArgs e)
         {
             ChatPreview selectedItem = e.SelectedItem as ChatPreview;
+            
         }
-
-        void OnListViewItemTapped(object sender, ItemTappedEventArgs e)
+        
+        async void OnListViewItemTapped(object sender, ItemTappedEventArgs e)
         {
             ChatPreview tappedItem = e.Item as ChatPreview;
+            var detail = new BeaconClient.ChatInterface();
+            detail.fromPreview = tappedItem;
+            await Navigation.PushAsync(detail);
         }
         
     }

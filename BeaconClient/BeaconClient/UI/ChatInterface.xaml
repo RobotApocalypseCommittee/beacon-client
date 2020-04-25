@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ui="clr-namespace:BeaconClient.UI;assembly=BeaconClient"
+             xmlns:beaconClient="clr-namespace:BeaconClient;assembly=BeaconClient"
+             x:Class="BeaconClient.ChatInterface">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ui:ChatInterfaceDataTemplateSelector x:Key="ChatInterfaceDataTemplateSelector" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <ContentPage.Content>
+        <StackLayout>
+            <ListView x:Name="MainListView" 
+                      ItemsSource="{Binding DisplayedChat.MessageList}"
+                      HasUnevenRows="True"
+                      BackgroundColor="#5F0F40"
+                      ItemTemplate="{StaticResource ChatInterfaceDataTemplateSelector}"/>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>

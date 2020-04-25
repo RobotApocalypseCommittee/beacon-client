@@ -8,6 +8,7 @@ namespace BeaconClient
         public String Name { get; set; }
         public String Recent { get; set; }
         public DateTime LastActivity { get; set; }
+        public int ChatID { get; set; }
 
         public override string ToString()
         {

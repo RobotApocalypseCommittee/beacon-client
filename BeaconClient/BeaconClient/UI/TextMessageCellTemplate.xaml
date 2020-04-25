@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<ViewCell xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:beaconClient="clr-namespace:BeaconClient;assembly=BeaconClient"
+             xmlns:ui="clr-namespace:BeaconClient.UI;assembly=BeaconClient"
+             x:Class="BeaconClient.UI.TextMessageCellTemplate">
+
+    
+    
+    <Grid Padding="10">
+        <Grid.Resources>
+            <ui:ChatInterfaceDateConverter x:Key="DateConvert" />
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.8*"></ColumnDefinition>
+            <ColumnDefinition Width="0.2*"></ColumnDefinition>
+                                
+        </Grid.ColumnDefinitions>
+                            
+        <Label Grid.Column="0"
+               Grid.Row="1"
+               Text="{Binding Body}"
+               HorizontalTextAlignment="Start"
+               FontSize="15"
+               TextColor="#fb8b24"
+               FontAttributes="Bold" />
+        <Label Grid.Row="1"
+               Grid.Column="1"
+               TextColor="#fb8b24"
+               HorizontalTextAlignment="End"
+               Text="{Binding Timestamp, Converter={StaticResource DateConvert}}"/>
+    </Grid>
+
+</ViewCell>
